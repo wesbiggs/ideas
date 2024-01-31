@@ -1,6 +1,6 @@
 # DIDLink: Providing IPNS functionality in coordination with decentralized IDs
 
-Author: Wes Biggs &lt;wes.biggs@projectliberty.io>
+Author: Wes Biggs &lt;wes@tralfamadore.com>
 
 Version: draft-20240130
 
