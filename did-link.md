@@ -114,13 +114,8 @@ In order for the published _DIDLink _file to be found on the network, we need a 
       "type": "DIDLink",
       "serviceEndpoint": "ipfs://{CID_of_DIDLink_file}",
       "ttl": 300,
-      "proof": {
-        "type": "DataIntegrityProof",
-        "verificationMethod": "did:dsnp:123#z6MkvgdbwobNffEBuGCjtTMtFPGZE9jKDf9DhyTatMtRqXEd",
-        "cryptosuite": "eddsa-2022",
-        "proofPurpose": "assertionMethod",
-        "proofValue": "z5kQT4XJDq17hcs3S9yytQbLz56iHhNMR4ZrAQov6okv3r5Diu6oVfuBw7GcFJ5W4c5cn4MPTj4pMCok7zvHfQumD"
-      }
+      "verificationMethod": "did:dsnp:123#z6MkvgdbwobNffEBuGCjtTMtFPGZE9jKDf9DhyTatMtRqXEd",
+      "proofValue": "z5kQT4XJDq17hcs3S9yytQbLz56iHhNMR4ZrAQov6okv3r5Diu6oVfuBw7GcFJ5W4c5cn4MPTj4pMCok7zvHfQumD"
     }
   ]
 }
