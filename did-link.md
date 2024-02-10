@@ -2,7 +2,7 @@
 
 Author: Wes Biggs &lt;wes@tralfamadore.com>
 
-Version: draft-20240130
+Version: draft-20240210 (update 1)
 
 
 ## Problem
@@ -19,8 +19,6 @@ Version: draft-20240130
 ## Objective
 
 Introduce a new strategy for IPNS that accomplishes the following:
-
-
 
 * Gives readers confidence that they are viewing the latest version of a named entity
 * Reduces network and storage requirements for IPFS nodes
@@ -101,7 +99,11 @@ _DIDLink_ should be assigned a multihash prefix in [https://github.com/multiform
 
 ### DID document
 
-In order for the published _DIDLink _file to be found on the network, we need a way to allow consumers of the data to determine the current CID. We envision the state management of the nonce value to be the responsibility of the user interacting with a consensus system that allows them to control data associated with a DID. The DID resolver for that DID must be capable of generating a DID document that has a service list with entries that indicate the CID where the DIDLink file associated with the key and nonce can be found, as in this example:
+In order for the published _DIDLink _file to be found on the network, we need a way to allow consumers of the data to determine the current CID. We envision the state management of the nonce value to be the responsibility of the user interacting with a consensus system that allows them to control data associated with a DID. The DID resolver for that DID must be capable of generating a DID document that has a service list with entries that (1) indicate where the CID where the DIDLink file associated with the key and nonce can be found, and (2) prove that the controller of the key used for the DIDLink file also has control of the IPNS DID (with fragment).
+
+(1) is accomplished using the `serviceEndpoint` value, which should link to the IPFS CID of the DIDLink file.
+
+(2) is accomplished by generating a cryptographic signature using the key as applied to the fully qualified DID with fragment used as the service `id` (in other words, the value used with IPNS).
 
 ```
 {
@@ -111,7 +113,14 @@ In order for the published _DIDLink _file to be found on the network, we need a 
       "id":"did:dsnp:123#profile",
       "type": "DIDLink",
       "serviceEndpoint": "ipfs://{CID_of_DIDLink_file}",
-      "ttl": 300
+      "ttl": 300,
+      "proof": {
+        "type": "DataIntegrityProof",
+        "verificationMethod": "did:dsnp:123#z6MkvgdbwobNffEBuGCjtTMtFPGZE9jKDf9DhyTatMtRqXEd",
+        "cryptosuite": "eddsa-2022",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z5kQT4XJDq17hcs3S9yytQbLz56iHhNMR4ZrAQov6okv3r5Diu6oVfuBw7GcFJ5W4c5cn4MPTj4pMCok7zvHfQumD"
+      }
     }
   ]
 }
@@ -120,8 +129,6 @@ In order for the published _DIDLink _file to be found on the network, we need a 
 This example indicates that a _DIDLink_ file for the "profile" data label can be found at the URL indicated by the service endpoint value (in this case, an IPFS CID).
 
 An alternative approach would be to have the service entry explicitly return the public key and nonce (without performing the hash operation). However, this step is easily performed by the DID resolver to produce a usable `serviceEndpoint` value. That said, a DID resolver could optionally return these values for clarity.
-
-Note: The _DIDLink_ file is self-authenticating, so it is not necessary that the controller of the key used for the _DIDLink_ file be the same as the controller of the DID. For example, two different DID documents (for different DIDs) could reference the same DIDLink service endpoint.
 
 This DID service definition should ideally be registered and published with [https://www.w3.org/TR/did-spec-registries/#service-types](https://www.w3.org/TR/did-spec-registries/#service-types).
 
@@ -135,9 +142,11 @@ When an IPNS resolver encounters an IPNS URI that is a DID (with a fragment), it
 
 1. Retrieve the DID document associated with the DID using the registered DID method resolver.
 2. Examine the service list within the DID document. Find the first service entry with type "DIDLink" and a matching id and determine the serviceEndpoint.
-3. Retrieve the CID indicated by the serviceEndpoint value from the IPFS network.
-4. Verify the signature field within the retrieved file.
-5. Use the target property within the retrieved file to respond to the IPNS lookup.
+3. Check the ownership proof for the service by verifying the signature over the service `id` with the public key indicated.
+4. Retrieve the CID indicated by the serviceEndpoint value from the IPFS network.
+5. Ensure that the public key used in the retrieved file is the same as that used with the service proof.
+6. Verify the signature field within the retrieved file.
+7. Use the target property within the retrieved file to respond to the IPNS lookup.
 
 Note that the "ttl" field can be used to implement a caching strategy to limit the number of lookups required for both the DID and the DIDLink CID.
 
@@ -192,3 +201,11 @@ _What are some practical applications of this approach?_
 _Can the existing IPNS Record format be leveraged?_ (cf. [https://specs.ipfs.tech/ipns/ipns-record/#record-fields](https://specs.ipfs.tech/ipns/ipns-record/#record-fields))
 
 Possibly. The "Sequence" field would either be ignored (and the nonce value would become a data extension within the extensible data field), or the "Sequence" field could be used for the nonce value. Serializing this way would be more space efficient (but less human readable) than JSON. I intentionally did not use this in the example to avoid confusion with IPNS DHT/PubSub routing records. (That is, we could leverage the compact data serialization format, but it would not be used in the same way.)
+
+## Document history
+
+### draft-20240210 (update 1)
+
+Added `proof` object to DID `service` definition to link control of DID document to control of DIDLink file, and corresponding verification steps to the algorithm.
+
+Removed obsolete note about DID controllers not needing to match.
